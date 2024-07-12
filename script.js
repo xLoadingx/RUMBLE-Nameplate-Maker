@@ -28,28 +28,33 @@ function drawText() {
     ['text1', 'text2', 'text3'].forEach((id, index) => {
         const text = document.getElementById(id).value;
         const position = positions[index];
-        const parsedText = parseColoredText(text);
-        const textObj = new fabric.Text(parsedText.text, {
-            left: position.left,
-            top: position.top,
-            fill: parsedText.color,
-            fontSize: fontSize,
-            fontFamily: 'Arial'
-        });
-        canvas.add(textObj);
+        drawColoredText(text, position.left, position.top);
     });
 }
 
-function parseColoredText(text) {
+function drawColoredText(text, x, y) {
     const colorRegex = /<#([0-9a-fA-F]{3,6})>/g;
-    let matches;
-    let parsedText = '';
-    let color = '#32291E'; // Default color
-    while ((matches = colorRegex.exec(text)) !== null) {
-        color = `#${matches[1]}`;
-        parsedText += text.substring(colorRegex.lastIndex);
-    }
-    return { text: parsedText, color: color };
+    let segments = text.split(colorRegex);
+    let defaultColor = '#32291E';
+    let currentColor = defaultColor;
+
+    segments.forEach((segment, index) => {
+        if (index % 2 === 1) {
+            currentColor = `#${segment}`;
+        } else {
+            if (segment) {
+                const textObj = new fabric.Text(segment, {
+                    left: x,
+                    top: y,
+                    fill: currentColor,
+                    fontSize: fontSize,
+                    fontFamily: 'Arial'
+                });
+                canvas.add(textObj);
+                x += textObj.width;
+            }
+        }
+    });
 }
 
 function toggleImage() {
@@ -59,6 +64,9 @@ function toggleImage() {
 
 function loadOverlayImage() {
     fabric.Image.fromURL(currentOverlayImage, (img) => {
+        if (overlayImage) {
+            canvas.remove(overlayImage);
+        }
         overlayImage = img.set({
             scaleX: overlayScale,
             scaleY: overlayScale,
